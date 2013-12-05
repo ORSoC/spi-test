@@ -38,6 +38,7 @@ static void pabort(const char *s)
 }
 
 static const char *device = "/dev/spidev1.1";
+static int mode_set = 0;
 static uint8_t mode = 0;
 static uint8_t bits = 8;
 static uint32_t speed = 500000;
@@ -107,6 +108,10 @@ static void print_usage(const char *prog)
 	     "  -b --bpw      bits per word \n"
 	     "  -n --len      length\n"
 	     "  -l --loop     loopback\n"
+	     "  -0 --mode-0   SPI MODE 0\n"
+	     "  -1 --mode-1   SPI MODE 1\n"
+	     "  -2 --mode-2   SPI MODE 2\n"
+	     "  -3 --mode-3   SPI MODE 3\n"
 	     "  -H --cpha     clock phase\n"
 	     "  -O --cpol     clock polarity\n"
 	     "  -L --lsb      least significant bit first\n"
@@ -129,9 +134,13 @@ static void parse_opts(int argc, char *argv[])
 			{ "loop",    0, 0, 'l' },
 			{ "cpha",    0, 0, 'H' },
 			{ "cpol",    0, 0, 'O' },
+			{ "mode-0",  0, 0, '0' },
+			{ "mode-1",  0, 0, '1' },
+			{ "mode-2",  0, 0, '2' },
+			{ "mode-3",  0, 0, '3' },
 			{ "lsb",     0, 0, 'L' },
 			{ "cs-high", 0, 0, 'C' },
-			{ "3wire",   0, 0, '3' },
+			{ "3wire",   0, 0, 'w' },
 			{ "no-cs",   0, 0, 'N' },
 			{ "ready",   0, 0, 'R' },
 			{ NULL, 0, 0, 0 },
@@ -161,27 +170,51 @@ static void parse_opts(int argc, char *argv[])
 			break;
 		case 'l':
 			mode |= SPI_LOOP;
+			mode_set = 1;
 			break;
 		case 'H':
 			mode |= SPI_CPHA;
+			mode_set = 1;
+			break;
+		case '0':
+			mode |= SPI_MODE_0;
+			mode_set = 1;
+			break;
+		case '1':
+			mode |= SPI_MODE_1;
+			mode_set = 1;
+			break;
+		case '2':
+			mode |= SPI_MODE_2;
+			mode_set = 1;
+			break;
+		case '3':
+			mode |= SPI_MODE_3;
+			mode_set = 1;
 			break;
 		case 'O':
 			mode |= SPI_CPOL;
+			mode_set = 1;
 			break;
 		case 'L':
 			mode |= SPI_LSB_FIRST;
+			mode_set = 1;
 			break;
 		case 'C':
 			mode |= SPI_CS_HIGH;
+			mode_set = 1;
 			break;
-		case '3':
+		case 'w':
 			mode |= SPI_3WIRE;
+			mode_set = 1;
 			break;
 		case 'N':
 			mode |= SPI_NO_CS;
+			mode_set = 1;
 			break;
 		case 'R':
 			mode |= SPI_READY;
+			mode_set = 1;
 			break;
 		default:
 			print_usage(argv[0]);
@@ -237,9 +270,11 @@ int main(int argc, char *argv[])
 	/*
 	 * spi mode
 	 */
-	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
-	if (ret == -1)
-		pabort("can't set spi mode");
+	if (mode_set) {
+		ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
+		if (ret == -1)
+			pabort("can't set spi mode");
+	}
 
 	ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
 	if (ret == -1)
